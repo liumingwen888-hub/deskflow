@@ -36,6 +36,5 @@ protected:
   virtual std::string doToIClipboard(const std::string &) const = 0;
 
 private:
-  static std::string convertLinefeedToMacOS(const std::string &);
   static std::string convertLinefeedToUnix(const std::string &);
 };

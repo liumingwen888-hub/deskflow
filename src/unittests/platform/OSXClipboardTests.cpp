@@ -35,8 +35,9 @@ void OSXClipboardTests::formatConvert_UTF8()
   OSXClipboardUTF8Converter converter;
   QCOMPARE(IClipboard::Format::Text, converter.getFormat());
   QCOMPARE(converter.getOSXFormat(), CFSTR("public.utf8-plain-text"));
-  QCOMPARE(converter.fromIClipboard("test data\n"), "test data\r");
+  QCOMPARE(converter.fromIClipboard("test data\n"), "test data\n");
   QCOMPARE(converter.toIClipboard("test data\r"), "test data\n");
+  QCOMPARE(converter.toIClipboard("test data\r\n"), "test data\n");
 }
 
 QTEST_MAIN(OSXClipboardTests)
