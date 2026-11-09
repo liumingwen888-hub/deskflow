@@ -80,12 +80,16 @@ std::string MSWindowsClipboardAnyTextConverter::convertLinefeedToWin32(const std
   dst.reserve(src.size() + numNewlines);
 
   // copy string, converting newlines
+  // do not insert a carriage return if the previous character is already one,
+  // so that an already canonical "\r\n" is not turned into "\r\r\n"
   n = (uint32_t)src.size();
+  char prev = '\0';
   for (const char *scan = src.c_str(); n > 0; ++scan, --n) {
-    if (scan[0] == '\n') {
+    if (scan[0] == '\n' && prev != '\r') {
       dst += '\r';
     }
     dst += scan[0];
+    prev = scan[0];
   }
 
   return dst;
@@ -93,11 +97,11 @@ std::string MSWindowsClipboardAnyTextConverter::convertLinefeedToWin32(const std
 
 std::string MSWindowsClipboardAnyTextConverter::convertLinefeedToUnix(const std::string &src) const
 {
-  // count newlines in string
+  // count line breaks in string (pairs and lone carriage returns)
   uint32_t numNewlines = 0;
   uint32_t n = (uint32_t)src.size();
   for (const char *scan = src.c_str(); n > 0; ++scan, --n) {
-    if (scan[0] == '\r' && scan[1] == '\n') {
+    if (scan[0] == '\r') {
       ++numNewlines;
     }
   }
@@ -109,10 +113,15 @@ std::string MSWindowsClipboardAnyTextConverter::convertLinefeedToUnix(const std:
   std::string dst;
   dst.reserve(src.size());
 
-  // copy string, converting newlines
+  // copy string, converting newlines; normalize fully to unix line breaks:
+  // "\r\n" becomes "\n" and a lone "\r" also becomes "\n"
   n = (uint32_t)src.size();
   for (const char *scan = src.c_str(); n > 0; ++scan, --n) {
-    if (scan[0] != '\r' || scan[1] != '\n') {
+    if (scan[0] == '\r') {
+      if (scan[1] != '\n') {
+        dst += '\n';
+      }
+    } else {
       dst += scan[0];
     }
   }
