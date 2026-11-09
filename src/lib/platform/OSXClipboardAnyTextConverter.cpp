@@ -20,8 +20,8 @@ IClipboard::Format OSXClipboardAnyTextConverter::getFormat() const
 
 std::string OSXClipboardAnyTextConverter::fromIClipboard(const std::string &data) const
 {
-  // convert linefeeds and then convert to desired encoding
-  return doFromIClipboard(convertLinefeedToMacOS(data));
+  // convert to desired encoding; line breaks are left as-is (LF)
+  return doFromIClipboard(data);
 }
 
 std::string OSXClipboardAnyTextConverter::toIClipboard(const std::string &data) const
@@ -30,31 +30,25 @@ std::string OSXClipboardAnyTextConverter::toIClipboard(const std::string &data) 
   return convertLinefeedToUnix(doToIClipboard(data));
 }
 
-static bool isLF(char ch)
-{
-  return (ch == '\n');
-}
-
-static bool isCR(char ch)
-{
-  return (ch == '\r');
-}
-
-std::string OSXClipboardAnyTextConverter::convertLinefeedToMacOS(const std::string &src)
-{
-  // note -- we assume src is a valid UTF-8 string
-  std::string copy = src;
-
-  std::replace_if(copy.begin(), copy.end(), isLF, '\r');
-
-  return copy;
-}
-
 std::string OSXClipboardAnyTextConverter::convertLinefeedToUnix(const std::string &src)
 {
-  std::string copy = src;
+  // note -- we assume src is a valid UTF-8 string
+  // normalize fully to unix line breaks: "\r\n" becomes "\n" and a lone
+  // "\r" also becomes "\n", so mac style line endings never double up
+  std::string dst;
+  dst.reserve(src.size());
+  const size_t n = src.size();
+  for (size_t i = 0; i < n; ++i) {
+    if (src[i] == '\r') {
+      if (i + 1 >= n || src[i + 1] != '\n') {
+        // lone carriage return becomes a newline
+        dst += '\n';
+      }
+      // else: "\r\n" pair, drop the '\r' and keep the following '\n'
+    } else {
+      dst += src[i];
+    }
+  }
 
-  std::replace_if(copy.begin(), copy.end(), isCR, '\n');
-
-  return copy;
+  return dst;
 }
